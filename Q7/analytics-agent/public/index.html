@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ALK Analytics Agent — Dr. Theiss</title>
+<style>
+  :root {
+    --pine: #2D5016; --pine-light: #3d6b1f; --pine-pale: #eef4e8;
+    --gold: #b8860b; --gold-light: #f5e6b0;
+    --off-white: #f9f8f5; --slate: #2c3440; --muted: #6b7280;
+    --border: #d1d5db; --danger: #dc2626; --success: #16a34a;
+    --card: #ffffff; --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', system-ui, sans-serif; background: var(--off-white); color: var(--slate); min-height: 100vh; }
+
+  header { background: var(--pine); color: white; padding: 16px 32px; display: flex; align-items: center; gap: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
+  .brand-icon { width: 42px; height: 42px; background: var(--gold); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+  header h1 { font-size: 1.2rem; font-weight: 700; }
+  header p { font-size: 0.78rem; opacity: 0.75; margin-top: 2px; }
+  .badge { margin-left: auto; background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; font-size: 0.72rem; padding: 4px 10px; border-radius: 20px; white-space: nowrap; }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 28px 24px; }
+
+  .api-bar { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; display: flex; align-items: center; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+  .api-bar label { font-size: 0.85rem; font-weight: 600; white-space: nowrap; }
+  .api-bar input { flex: 1; min-width: 200px; border: 1px solid var(--border); border-radius: 6px; padding: 8px 12px; font-size: 0.9rem; font-family: monospace; background: var(--off-white); }
+  .api-bar input:focus { outline: 2px solid var(--pine); }
+
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px; }
+  .tab { flex: 1; padding: 9px 14px; border: none; background: none; border-radius: 7px; cursor: pointer; font-size: 0.875rem; font-weight: 500; color: var(--muted); transition: all 0.15s; }
+  .tab.active { background: var(--pine); color: white; font-weight: 600; }
+  .tab:hover:not(.active) { background: var(--pine-pale); color: var(--pine); }
+
+  .panel { display: none; }
+  .panel.active { display: block; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 22px; margin-bottom: 20px; }
+  .card h2 { font-size: 1.05rem; font-weight: 700; color: var(--pine); margin-bottom: 14px; }
+
+  .upload-zone { border: 2px dashed var(--border); border-radius: 8px; padding: 32px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--off-white); }
+  .upload-zone:hover, .upload-zone.drag { border-color: var(--pine); background: var(--pine-pale); }
+  .upload-zone .icon { font-size: 2rem; margin-bottom: 8px; }
+  .upload-zone p { color: var(--muted); font-size: 0.875rem; }
+  #file-input { display: none; }
+
+  .btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px; border-radius: 7px; border: none; font-size: 0.875rem; font-weight: 600; cursor: pointer; transition: all 0.15s; text-decoration: none; }
+  .btn-primary { background: var(--pine); color: white; }
+  .btn-primary:hover { background: var(--pine-light); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-secondary { background: var(--off-white); color: var(--slate); border: 1px solid var(--border); }
+  .btn-secondary:hover { background: var(--pine-pale); border-color: var(--pine); color: var(--pine); }
+  .btn-gold { background: var(--gold); color: white; }
+  .btn-gold:hover { background: #9a720a; }
+  .actions { display: flex; gap: 10px; margin-top: 16px; flex-wrap: wrap; }
+
+  .loader { display: none; align-items: center; gap: 10px; padding: 14px 18px; background: var(--pine-pale); border: 1px solid #b6d9a0; border-radius: 8px; font-size: 0.875rem; color: var(--pine); margin-top: 12px; }
+  .loader.show { display: flex; }
+  .spinner { width: 18px; height: 18px; border: 2px solid #b6d9a0; border-top-color: var(--pine); border-radius: 50%; animation: spin 0.7s linear infinite; flex-shrink: 0; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .error { display: none; background: #fef2f2; border: 1px solid #fca5a5; color: var(--danger); border-radius: 8px; padding: 12px 16px; font-size: 0.875rem; margin-top: 12px; }
+  .error.show { display: block; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 14px; margin-bottom: 20px; }
+  .stat-box { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; text-align: center; }
+  .stat-box .value { font-size: 2rem; font-weight: 800; color: var(--pine); line-height: 1; }
+  .stat-box .label { font-size: 0.72rem; color: var(--muted); margin-top: 4px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  .segments-row { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+  .seg-chip { display: flex; flex-direction: column; background: var(--pine-pale); border: 1px solid #c8e0b0; border-radius: 8px; padding: 10px 16px; min-width: 120px; }
+  .seg-chip .seg-name { font-size: 0.78rem; font-weight: 700; color: var(--pine); }
+  .seg-chip .seg-count { font-size: 1.5rem; font-weight: 800; color: var(--slate); }
+  .seg-chip .seg-pct { font-size: 0.7rem; color: var(--muted); }
+
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .data-table th { background: var(--pine); color: white; padding: 8px 12px; text-align: left; font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  .data-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .data-table tr:hover td { background: var(--pine-pale); }
+  .data-table tr:last-child td { border-bottom: none; }
+
+  .ai-box { background: linear-gradient(135deg, #f0f7e8, #fffef5); border: 1px solid #b6d9a0; border-left: 4px solid var(--pine); border-radius: 8px; padding: 18px; white-space: pre-wrap; font-size: 0.9rem; line-height: 1.7; color: var(--slate); }
+
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: 0.8rem; font-weight: 600; color: var(--slate); }
+  .form-group select, .form-group input, .form-group textarea { border: 1px solid var(--border); border-radius: 6px; padding: 9px 12px; font-size: 0.875rem; background: var(--off-white); color: var(--slate); }
+  .form-group select:focus, .form-group input:focus, .form-group textarea:focus { outline: 2px solid var(--pine); }
+  .form-group.full { grid-column: 1 / -1; }
+
+  .signal-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-top: 16px; }
+  .signal-header { background: var(--pine); color: white; padding: 14px 18px; font-weight: 700; font-size: 1.05rem; }
+  .signal-body { padding: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .signal-field label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); font-weight: 600; display: block; }
+  .signal-field .val { font-size: 0.9rem; color: var(--slate); margin-top: 3px; }
+  .channel-list { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+  .channel-tag { background: var(--pine-pale); color: var(--pine); border: 1px solid #c8e0b0; border-radius: 20px; padding: 3px 10px; font-size: 0.78rem; font-weight: 600; }
+
+  .lift-result { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin: 16px 0; }
+  .lift-box { border: 1px solid var(--border); border-radius: 8px; padding: 14px; text-align: center; background: var(--card); }
+  .lift-box .metric { font-size: 0.7rem; text-transform: uppercase; color: var(--muted); letter-spacing: 0.05em; }
+  .lift-box .number { font-size: 1.8rem; font-weight: 800; margin-top: 4px; }
+  .lift-box .number.positive { color: var(--success); }
+  .lift-box .number.negative { color: var(--danger); }
+  .lift-box .number.neutral { color: var(--pine); }
+
+  .peak-badge { display: inline-block; background: var(--gold-light); color: var(--gold); border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; }
+  .line-tag { display: inline-block; border-radius: 4px; padding: 2px 8px; font-size: 0.75rem; font-weight: 600; }
+
+  @media (max-width: 600px) {
+    .form-grid, .signal-body { grid-template-columns: 1fr; }
+    main { padding: 16px; }
+    header { padding: 12px 16px; }
+    .tabs { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="brand-icon">🌲</div>
+  <div>
+    <h1>ALK Customer Analytics Agent</h1>
+    <p>Dr. Theiss Naturwaren GmbH — Targeting & Campaign Intelligence</p>
+  </div>
+  <span class="badge">Gemini 2.5 Flash Lite</span>
+</header>
+
+<main>
+  <div class="api-bar">
+    <label>🔑 Gemini API Key</label>
+    <input type="password" id="api-key" placeholder="AIzaSy..." autocomplete="off" />
+    <span id="key-status" style="font-size:0.8rem; color:var(--muted); white-space:nowrap">Not set</span>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" onclick="switchTab('ingest')">📥 Ingest & Analyse</button>
+    <button class="tab" onclick="switchTab('targeting')">🎯 Targeting Signals</button>
+    <button class="tab" onclick="switchTab('lift')">📈 Sales Lift</button>
+  </div>
+
+  <!-- TAB 1 -->
+  <div class="panel active" id="panel-ingest">
+    <div class="card">
+      <h2>📥 Upload Customer Transaction Data</h2>
+      <div class="upload-zone" id="upload-zone" onclick="document.getElementById('file-input').click()">
+        <div class="icon">📄</div>
+        <p><strong>Click to upload CSV</strong> or drag & drop</p>
+        <p style="margin-top:6px; font-size:0.8rem">Required columns: customer_id, sku, date, qty, channel, price, weather, region</p>
+      </div>
+      <input type="file" id="file-input" accept=".csv" onchange="handleFileSelect(this)">
+      <div id="file-name" style="margin-top:10px; font-size:0.85rem; color:var(--muted); display:none"></div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="runAnalysis(false)">🔍 Analyse File</button>
+        <button class="btn btn-secondary" onclick="runAnalysis(true)">🧪 Use Sample Data</button>
+        <a href="/api/sample-csv" class="btn btn-secondary" download>⬇ Sample CSV</a>
+      </div>
+      <div class="loader" id="loader-ingest"><div class="spinner"></div> <span id="loader-ingest-msg">Crunching transaction data...</span></div>
+      <div class="error" id="error-ingest"></div>
+    </div>
+
+    <div id="results-ingest" style="display:none">
+      <div class="stats-grid" id="stats-grid"></div>
+      <div class="card">
+        <h2>👥 Customer Segments (RFM)</h2>
+        <div class="segments-row" id="segments-row"></div>
+      </div>
+      <div class="card">
+        <h2>🤖 AI Behavioural Insights</h2>
+        <div class="ai-box" id="ai-insights">Generating with Gemini...</div>
+      </div>
+      <div class="card">
+        <h2>📅 Purchase Season Signals by SKU</h2>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr><th>Product</th><th>Line</th><th>Target Segment</th><th>Actual Peak Month</th><th>Declared Peak</th><th>Peak Volume</th></tr></thead>
+            <tbody id="season-body"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <h2>📊 Customer RFM Table</h2>
+        <div style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr><th>Customer</th><th>Recency</th><th>Frequency</th><th>Monetary €</th><th>Top Category</th><th>Top Season</th></tr></thead>
+            <tbody id="rfm-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 2 -->
+  <div class="panel" id="panel-targeting">
+    <div class="card">
+      <h2>🎯 Generate Targeting Signal Card</h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Customer Segment</label>
+          <select id="t-segment">
+            <option>Champions</option><option>LoyalCustomers</option><option>AtRisk</option>
+            <option>NewCustomers</option><option>Hibernating</option>
+            <option>Women 35-65 (Leg care)</option><option>Active 25-55 (Sport)</option><option>Traditional 55+</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Product (SKU)</label>
+          <select id="t-sku">
+            <option value="ALK-FB-01">Fuß Butter (ALK-FB-01)</option>
+            <option value="ALK-FB-02">Sole Fußbad (ALK-FB-02)</option>
+            <option value="ALK-FB-03">Hornhaut Reduziercreme (ALK-FB-03)</option>
+            <option value="ALK-FB-04">Hornhaut Entferner Maske (ALK-FB-04)</option>
+            <option value="ALK-FB-05">10% Urea Fußcreme (ALK-FB-05)</option>
+            <option value="ALK-FB-06">Fußpflege Deospray (ALK-FB-06)</option>
+            <option value="ALK-LG-01">5 in 1 Beinlotion (ALK-LG-01)</option>
+            <option value="ALK-LG-02">Bein Frische Gel (ALK-LG-02)</option>
+            <option value="ALK-LG-03">Besenreiser Pflegebalsam (ALK-LG-03)</option>
+            <option value="ALK-MG-01">Mobil Gel (ALK-MG-01)</option>
+            <option value="ALK-MG-02">Mobil Einreibung Extra Stark (ALK-MG-02)</option>
+            <option value="ALK-MG-03">Mobil Eisspray akut (ALK-MG-03)</option>
+            <option value="ALK-MG-04">Franzbranntwein (ALK-MG-04)</option>
+            <option value="ALK-MG-05">Wärmendes Intensiv Gel (ALK-MG-05)</option>
+            <option value="ALK-CB-01">Ur Bonbons (ALK-CB-01)</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label>Additional context (optional)</label>
+          <textarea id="t-context" rows="2" placeholder="e.g. sandal season push, post-Bundesliga matchday, Christmas gifting period..."></textarea>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="generateSignal()">⚡ Generate Signal</button>
+      </div>
+      <div class="loader" id="loader-targeting"><div class="spinner"></div> Generating targeting signal with Gemini...</div>
+      <div class="error" id="error-targeting"></div>
+      <div id="signal-output"></div>
+    </div>
+  </div>
+
+  <!-- TAB 3 -->
+  <div class="panel" id="panel-lift">
+    <div class="card">
+      <h2>📈 Post-Campaign Sales Lift Measurement</h2>
+      <p style="font-size:0.875rem; color:var(--muted); margin-bottom:16px">Compares pre-campaign vs post-campaign purchase volumes (treatment vs control period split). Uses sample transaction data.</p>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Select Product (SKU)</label>
+          <select id="lift-sku">
+            <option value="ALK-FB-03">Hornhaut Reduziercreme (ALK-FB-03)</option>
+            <option value="ALK-LG-01">5 in 1 Beinlotion (ALK-LG-01)</option>
+            <option value="ALK-MG-01">Mobil Gel (ALK-MG-01)</option>
+            <option value="ALK-MG-03">Mobil Eisspray akut (ALK-MG-03)</option>
+            <option value="ALK-LG-03">Besenreiser Pflegebalsam (ALK-LG-03)</option>
+            <option value="ALK-CB-01">Ur Bonbons (ALK-CB-01)</option>
+          </select>
+        </div>
+      </div>
+      <div class="actions">
+        <button class="btn btn-gold" onclick="measureLift()">📊 Measure Sales Lift</button>
+      </div>
+      <div class="loader" id="loader-lift"><div class="spinner"></div> Calculating lift & generating AI interpretation...</div>
+      <div class="error" id="error-lift"></div>
+      <div id="lift-output"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent';
+
+let uploadedFile = null;
+
+function getApiKey() { return document.getElementById('api-key').value.trim(); }
+
+document.getElementById('api-key').addEventListener('input', function() {
+  const s = document.getElementById('key-status');
+  if (this.value.trim().length > 10) { s.textContent = '✅ Key set'; s.style.color = 'var(--success)'; }
+  else { s.textContent = 'Not set'; s.style.color = 'var(--muted)'; }
+});
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => t.classList.toggle('active', ['ingest','targeting','lift'][i] === tab));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+}
+
+function handleFileSelect(input) {
+  uploadedFile = input.files[0];
+  if (uploadedFile) {
+    const el = document.getElementById('file-name');
+    el.style.display = 'block';
+    el.textContent = '📎 ' + uploadedFile.name + ' (' + (uploadedFile.size / 1024).toFixed(1) + ' KB)';
+  }
+}
+
+const zone = document.getElementById('upload-zone');
+zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag'); });
+zone.addEventListener('dragleave', () => zone.classList.remove('drag'));
+zone.addEventListener('drop', e => {
+  e.preventDefault(); zone.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f) { uploadedFile = f; const el = document.getElementById('file-name'); el.style.display = 'block'; el.textContent = '📎 ' + f.name; }
+});
+
+async function callGemini(apiKey, prompt) {
+  const res = await fetch(GEMINI_URL + '?key=' + apiKey, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: { temperature: 0.3, maxOutputTokens: 2048 }
+    })
+  });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error?.message || 'Gemini API error ' + res.status);
+  }
+  const data = await res.json();
+  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+}
+
+async function runAnalysis(useSample) {
+  const key = getApiKey();
+  if (!key) { showError('error-ingest', 'Please enter your Gemini API key first.'); return; }
+  if (!useSample && !uploadedFile) { showError('error-ingest', 'Please upload a CSV file or click "Use Sample Data".'); return; }
+
+  showLoader('loader-ingest', 'Step 1/2: Computing RFM & patterns...');
+  hideError('error-ingest');
+  document.getElementById('results-ingest').style.display = 'none';
+
+  try {
+    let res, data;
+    if (useSample) {
+      res = await fetch('/api/analyze', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ use_sample: true }) });
+    } else {
+      const fd = new FormData(); fd.append('file', uploadedFile);
+      res = await fetch('/api/analyze', { method: 'POST', body: fd });
+    }
+    data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    // Render non-AI parts immediately
+    renderAnalytics(data.analytics);
+    document.getElementById('results-ingest').style.display = 'block';
+    document.getElementById('ai-insights').textContent = '🤖 Generating insights with Gemini...';
+
+    // Now call Gemini from browser
+    setLoaderMsg('loader-ingest', 'Step 2/2: Getting AI insights from Gemini...');
+
+    const summary = {
+      total_transactions: data.analytics.transaction_count,
+      total_customers: data.analytics.customer_count,
+      segment_sizes: Object.fromEntries(Object.entries(data.analytics.segments).map(([k,v]) => [k, v.length])),
+      top_season_signals: data.analytics.season_signals.slice(0, 6),
+    };
+
+    const prompt = `You are an expert marketing analytics agent for Allgäuer Latschenkiefer (Dr. Theiss Naturwaren GmbH), a German pharmacy brand specialising in foot, leg, and muscle care.
+
+Analyse this customer behaviour data and provide:
+
+1. BEHAVIOURAL PATTERNS (2-3 sentences): What behaviour patterns stand out from the segmentation and purchase timing?
+
+2. TOP 3 TARGETING SIGNALS: Format each as:
+   → [Segment] | [Product/SKU] | [Best send window] | [Channel] | [Why]
+
+3. CAMPAIGN RECOMMENDATION: One specific campaign with timing, message angle, and expected outcome.
+
+Data summary:
+${JSON.stringify(summary, null, 2)}
+
+Brand context: Feet SKUs peak spring (sandal season) and autumn/winter. Leg SKUs peak summer (heavy legs). Muscle SKUs peak winter and sport season. Cough drops peak cold season (Nov-Jan).
+
+Be specific, practical, and concise. Use the actual product names where relevant.`;
+
+    const insights = await callGemini(key, prompt);
+    document.getElementById('ai-insights').textContent = insights;
+
+  } catch(e) {
+    showError('error-ingest', e.message);
+    document.getElementById('ai-insights').textContent = 'Could not generate AI insights: ' + e.message;
+  } finally {
+    hideLoader('loader-ingest');
+  }
+}
+
+function renderAnalytics(analytics) {
+  const totalRevenue = analytics.rfm.reduce((s, c) => s + c.monetary, 0);
+  document.getElementById('stats-grid').innerHTML = `
+    <div class="stat-box"><div class="value">${analytics.transaction_count}</div><div class="label">Transactions</div></div>
+    <div class="stat-box"><div class="value">${analytics.customer_count}</div><div class="label">Customers</div></div>
+    <div class="stat-box"><div class="value">€${totalRevenue.toFixed(0)}</div><div class="label">Total Revenue</div></div>
+    <div class="stat-box"><div class="value">${analytics.season_signals.length}</div><div class="label">Active SKUs</div></div>
+  `;
+
+  const segColors = { Champions:'#15803d', LoyalCustomers:'#1d4ed8', AtRisk:'#b45309', NewCustomers:'#7c3aed', Hibernating:'#6b7280' };
+  const total = analytics.customer_count;
+  document.getElementById('segments-row').innerHTML = Object.entries(analytics.segments).map(([k,v]) => `
+    <div class="seg-chip">
+      <span class="seg-name" style="color:${segColors[k]||'var(--pine)'}">${k}</span>
+      <span class="seg-count">${v.length}</span>
+      <span class="seg-pct">${total ? ((v.length/total)*100).toFixed(0) : 0}% of base</span>
+    </div>
+  `).join('');
+
+  const lineColors = { 'Feet':'#fce7f3|#be185d', 'Legs':'#dbeafe|#1d4ed8', 'Muscles/Joints':'#fef3c7|#92400e', 'Cough drops':'#f0fdf4|#15803d' };
+  document.getElementById('season-body').innerHTML = analytics.season_signals.map(s => {
+    const [bg, fg] = (lineColors[s.line] || '#f3f4f6|#374151').split('|');
+    return `<tr>
+      <td><strong>${s.product_name}</strong><br><span style="font-size:0.72rem;color:var(--muted)">${s.sku}</span></td>
+      <td><span class="line-tag" style="background:${bg};color:${fg}">${s.line}</span></td>
+      <td style="font-size:0.8rem">${s.target_segment}</td>
+      <td><span class="peak-badge">📅 ${s.peak_send_month}</span></td>
+      <td style="font-size:0.8rem;color:var(--muted)">${s.declared_peak}</td>
+      <td><strong>${s.volume_at_peak}</strong> units</td>
+    </tr>`;
+  }).join('');
+
+  document.getElementById('rfm-body').innerHTML = analytics.rfm.map(c => `
+    <tr>
+      <td><strong>${c.customer_id}</strong></td>
+      <td>${c.recency_days}d</td>
+      <td>${c.frequency}</td>
+      <td>€${c.monetary}</td>
+      <td>${c.top_line}</td>
+      <td>${c.top_season}</td>
+    </tr>
+  `).join('');
+}
+
+async function generateSignal() {
+  const key = getApiKey();
+  if (!key) { showError('error-targeting', 'Please enter your Gemini API key.'); return; }
+
+  const segment = document.getElementById('t-segment').value;
+  const sku = document.getElementById('t-sku').value;
+  const skuName = document.getElementById('t-sku').options[document.getElementById('t-sku').selectedIndex].text;
+  const context = document.getElementById('t-context').value;
+
+  showLoader('loader-targeting', 'Generating targeting signal with Gemini...');
+  hideError('error-targeting');
+  document.getElementById('signal-output').innerHTML = '';
+
+  try {
+    const prompt = `Generate a precise advertising targeting signal card for Allgäuer Latschenkiefer (Dr. Theiss Naturwaren GmbH), a German pharmacy brand.
+
+Segment: ${segment}
+SKU: ${sku} — ${skuName}
+Additional context: ${context || 'none'}
+
+Brand sells through pharmacies and pharmacy e-commerce in Germany. Advertising must comply with German Heilmittelwerbegesetz (HWG) — no medical cure claims, only cosmetic/wellness benefits.
+
+Return ONLY a valid JSON object (no markdown, no backticks) with exactly these fields:
+{
+  "headline": "short German ad headline, max 10 words",
+  "targeting_criteria": "specific age range, gender, interests, geography",
+  "best_send_window": "specific month(s) + best time of day",
+  "channel_priority": ["channel1", "channel2", "channel3"],
+  "message_angle": "one sentence describing the core message hook",
+  "budget_note": "low/medium/high and brief reason"
+}`;
+
+    const raw = await callGemini(key, prompt);
+    let signal;
+    try { signal = JSON.parse(raw.replace(/```json|```/g, '').trim()); }
+    catch { signal = null; }
+
+    if (signal && signal.headline) {
+      const channels = Array.isArray(signal.channel_priority) ? signal.channel_priority : [signal.channel_priority];
+      document.getElementById('signal-output').innerHTML = `
+        <div class="signal-card">
+          <div class="signal-header">📣 ${signal.headline}</div>
+          <div class="signal-body">
+            <div class="signal-field"><label>Targeting Criteria</label><div class="val">${signal.targeting_criteria}</div></div>
+            <div class="signal-field"><label>Best Send Window</label><div class="val">⏰ ${signal.best_send_window}</div></div>
+            <div class="signal-field"><label>Message Angle</label><div class="val">${signal.message_angle}</div></div>
+            <div class="signal-field"><label>Budget Level</label><div class="val">💰 ${signal.budget_note}</div></div>
+            <div class="signal-field" style="grid-column:1/-1"><label>Channel Priority</label>
+              <div class="channel-list">${channels.map((c,i) => `<span class="channel-tag">${i+1}. ${c}</span>`).join('')}</div>
+            </div>
+          </div>
+        </div>`;
+    } else {
+      document.getElementById('signal-output').innerHTML = `<div class="ai-box" style="margin-top:16px">${raw}</div>`;
+    }
+  } catch(e) {
+    showError('error-targeting', e.message);
+  } finally {
+    hideLoader('loader-targeting');
+  }
+}
+
+async function measureLift() {
+  const key = getApiKey();
+  if (!key) { showError('error-lift', 'Please enter your Gemini API key.'); return; }
+
+  const sku = document.getElementById('lift-sku').value;
+  showLoader('loader-lift', 'Calculating lift...');
+  hideError('error-lift');
+  document.getElementById('lift-output').innerHTML = '';
+
+  try {
+    // Get lift from backend
+    const fd = new FormData(); fd.append('sku', sku);
+    const res = await fetch('/api/lift', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+
+    const l = data.lift_result;
+    const liftPct = l.estimated_lift_pct;
+    const cls = liftPct > 0 ? 'positive' : liftPct < 0 ? 'negative' : 'neutral';
+    const sign = liftPct > 0 ? '+' : '';
+
+    document.getElementById('lift-output').innerHTML = `
+      <div class="lift-result">
+        <div class="lift-box"><div class="metric">Product</div><div style="font-weight:700;margin-top:8px;font-size:0.9rem">${l.product}</div></div>
+        <div class="lift-box"><div class="metric">Control avg qty</div><div class="number neutral">${l.control_period_avg_qty}</div></div>
+        <div class="lift-box"><div class="metric">Treatment avg qty</div><div class="number neutral">${l.treatment_period_avg_qty}</div></div>
+        <div class="lift-box"><div class="metric">Estimated Lift</div><div class="number ${cls}">${sign}${liftPct}%</div></div>
+      </div>
+      <div class="ai-box" id="lift-interpretation">🤖 Generating AI interpretation...</div>
+    `;
+
+    setLoaderMsg('loader-lift', 'Getting AI interpretation...');
+
+    const prompt = `You are a marketing analyst for Allgäuer Latschenkiefer (Dr. Theiss Naturwaren GmbH).
+
+Interpret this sales lift result in 2-3 sentences. Be specific about what it means for the campaign and what the team should do next.
+
+Result: ${JSON.stringify(l)}
+
+Was the campaign effective? What should be the next action?`;
+
+    const interpretation = await callGemini(key, prompt);
+    document.getElementById('lift-interpretation').textContent = interpretation;
+
+  } catch(e) {
+    showError('error-lift', e.message);
+  } finally {
+    hideLoader('loader-lift');
+  }
+}
+
+function showLoader(id, msg) {
+  const el = document.getElementById(id);
+  el.classList.add('show');
+  if (msg) setLoaderMsg(id, msg);
+}
+function hideLoader(id) { document.getElementById(id).classList.remove('show'); }
+function setLoaderMsg(id, msg) {
+  const span = document.getElementById(id.replace('loader-', 'loader-') + '-msg') || document.querySelector('#' + id + ' span:last-child');
+  if (span) span.textContent = msg;
+}
+function showError(id, msg) { const el = document.getElementById(id); el.textContent = '⚠️ ' + msg; el.classList.add('show'); }
+function hideError(id) { document.getElementById(id).classList.remove('show'); }
+</script>
+</body>
+</html>
