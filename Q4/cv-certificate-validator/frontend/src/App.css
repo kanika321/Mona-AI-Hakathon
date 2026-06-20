@@ -1,0 +1,233 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f4f5f7;
+  color: #1a1a1a;
+}
+
+.page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+header h1 {
+  font-size: 24px;
+  margin-bottom: 4px;
+}
+
+.subtitle {
+  color: #666;
+  margin: 0;
+  font-size: 14px;
+}
+
+.type-toggle {
+  display: flex;
+  gap: 8px;
+  background: #e9eaee;
+  padding: 4px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+.toggle-btn {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #555;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.toggle-btn.active {
+  background: #fff;
+  color: #1a1a1a;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.dropzone {
+  border: 2px dashed #c4c8d0;
+  border-radius: 12px;
+  padding: 48px 20px;
+  text-align: center;
+  cursor: pointer;
+  background: #fff;
+  transition: border-color 0.15s ease;
+}
+
+.dropzone:hover {
+  border-color: #4a6cf7;
+}
+
+.hint {
+  font-size: 12px;
+  color: #999;
+}
+
+.filename {
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+button {
+  padding: 10px 24px;
+  font-size: 15px;
+  border-radius: 8px;
+  border: none;
+  background: #4a6cf7;
+  color: #fff;
+  cursor: pointer;
+}
+
+button:disabled {
+  background: #b9c2e0;
+  cursor: not-allowed;
+}
+
+button.secondary {
+  background: #e5e7eb;
+  color: #333;
+}
+
+.error-box {
+  margin-top: 20px;
+  padding: 14px;
+  border-radius: 8px;
+  background: #fde8e8;
+  color: #9b1c1c;
+}
+
+.result-card {
+  margin-top: 28px;
+  border-radius: 12px;
+  padding: 24px;
+  background: #fff;
+  border-left: 6px solid #ccc;
+}
+
+.result-card.valid {
+  border-left-color: #1f9d55;
+}
+
+.result-card.invalid {
+  border-left-color: #d33;
+}
+
+.result-card.medium {
+  border-left-color: #e0a800;
+}
+
+.result-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.result-header h2 {
+  font-size: 18px;
+  margin: 0;
+}
+
+.confidence-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.confidence-bar-track {
+  flex: 1;
+  height: 8px;
+  background: #eee;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.confidence-bar-fill {
+  height: 100%;
+  background: #4a6cf7;
+}
+
+.confidence-value {
+  font-weight: 600;
+  width: 42px;
+  text-align: right;
+}
+
+.detail-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.detail-label {
+  color: #666;
+}
+
+.risk-badge {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.risk-badge.risk-low {
+  background: #e3f7e9;
+  color: #1f9d55;
+}
+
+.risk-badge.risk-medium {
+  background: #fff4e0;
+  color: #b97500;
+}
+
+.risk-badge.risk-high {
+  background: #fde8e8;
+  color: #c0271e;
+}
+
+.red-flags {
+  margin-top: 16px;
+  font-size: 13px;
+}
+
+.red-flags ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+  color: #555;
+}
+
+.red-flags li {
+  margin-bottom: 4px;
+}
+
+.reasoning {
+  margin-top: 14px;
+  font-size: 13px;
+  color: #555;
+  line-height: 1.5;
+}
